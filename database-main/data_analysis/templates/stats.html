@@ -1,0 +1,33 @@
+<!-- stats.html -->
+<h1>Statistics</h1>
+
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit">Submit</button>
+</form>
+
+{% if selected_date %}
+<h2>Top Sold Products on {{ selected_date }}</h2>
+{% if top_products %}
+<ul>
+  {% for product in top_products %}
+  <li>{{ product.product__description }} - <strong>x{{ product.total_quantity }}</strong> - €{{ product.total_revenue }}</li>
+  {% endfor %}
+</ul>
+<p><strong>Daily Revenue:</strong> ${{ daily_revenue }}</p>
+{% else %}
+<p>No products sold on this date.</p>
+{% endif %} {% else %}
+<h2>Top 20 Most Sold Products</h2>
+{% if top_products %}
+<ul>
+  {% for product in top_products %}
+  <li>{{ product.product__description }} - {{ product.total_quantity }} units sold</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No products sold yet.</p>
+{% endif %}
+<p><strong>Weekly Revenue:</strong> ${{ weekly_revenue }}</p>
+<p><strong>Monthly Revenue:</strong> ${{ monthly_revenue }}</p>
+{% endif %}

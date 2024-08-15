@@ -1,0 +1,30 @@
+<h1>Order Detail for {{ order.order_number }}</h1>
+
+<h2>Customer Information</h2>
+<p>Name: {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+<p>Date: {{ order.order_date }}</p>
+<p>Total Amount: {{ order.total_amount }}</p>
+<p>Shipping Cost: {{ order.shipping_cost }}</p>
+<p>Shipping Method: {{ shipping_method }}</p>
+<!-- Aquí se muestra el método de envío -->
+<h2>Products</h2>
+<table>
+  <tr>
+    <th>Product ID</th>
+    <th>Product Number</th>
+    <th>Product Description</th>
+    <th>Quantity</th>
+    <th>Net Price</th>
+  </tr>
+  {% for product in order.orderproduct_set.all %}
+  <tr>
+    <td>{{ product.product.product_id }}</td>
+    <td>{{ product.product.product_number }}</td>
+    <td>{{ product.product.description }}</td>
+    <td>{{ product.quantity }}</td>
+    <td>{{ product.net_price }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p>Total (Products + Shipping): {{ order.total_amount }}</p>
+<a href="{% url 'home' %}">Back to Orders</a>

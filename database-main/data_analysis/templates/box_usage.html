@@ -1,10 +1,15 @@
-<h1>Box Usage Statistics</h1>
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit">Submit</button>
+</form>
 
-<h2>Box Products Used</h2>
+{% if box_products %}
+<h2>Box Usage from {{ form.cleaned_data.start_date }} to {{ form.cleaned_data.end_date }}</h2>
 <ul>
-  {% for box in box_products %}
-  <li>{{ box.product__description }} - x<strong>{{ box.total_used }}</strong></li>
+  {% for product in box_products %}
+  <li>{{ product.product__description }} - {{ product.total_used }} used</li>
   {% endfor %}
 </ul>
-
-<a href="{% url 'home' %}">Back to Orders</a>
+{% else %}
+<p>No box usage found for the selected date range.</p>
+{% endif %}

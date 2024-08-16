@@ -6,8 +6,9 @@ from django.utils import timezone
 from decimal import Decimal
 from django.db.models import Sum, Count
 from django.db.models import Q, F
-from .forms import DateSelectorForm
+from .forms import DateSelectorForm, DateRangeForm
 from django.db.models.functions import Round
+
 
 def home(request):
     # Aquí puedes ajustar el rango de fechas según lo que necesites
@@ -136,23 +137,40 @@ def stats_view(request):
 
 
 def box_usage_view(request):
-    # Filtrar y sumar el uso de las cajas
-    box_products = OrderProduct.objects.filter(
-        Q(product__description__icontains="Karton") | 
-        Q(product__description__icontains="PF42") | 
-        Q(product__description__icontains="CHV26") | 
-        Q(product__description__icontains="CAS06") | 
-        Q(product__description__icontains="CAD13E") | 
-        Q(product__description__icontains="CHA60") | 
-        Q(product__description__icontains="PFD50") | 
-        Q(product__description__icontains="CAD09A") |
-        Q(product__description__icontains="CAD38") | 
-        Q(product__description__icontains="Standbodenbeutel")
-    ).values('product__description') \
-     .annotate(total_used=Sum('quantity')) \
-     .order_by('-total_used')
+    form = DateRangeForm()
+    box_products = []
 
+    if request.method == 'POST':
+        form = DateRangeForm(request.POST)
+        if form.is_valid():
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+            end_datetime = datetime.combine(end_date, datetime.max.time())
+
+            # Filtrar y sumar el uso de las cajas dentro del rango de fechas seleccionado
+            box_products = (
+                OrderProduct.objects
+                .filter(
+                    Q(product__description__icontains="Karton") | 
+                    Q(product__description__icontains="PF42") | 
+                    Q(product__description__icontains="CHV26") | 
+                    Q(product__description__icontains="CAS06") | 
+                    Q(product__description__icontains="CAD13E") | 
+                    Q(product__description__icontains="CHA60") | 
+                    Q(product__description__icontains="PFD50") | 
+                    Q(product__description__icontains="CAD09A") |
+                    Q(product__description__icontains="CAD38") | 
+                    Q(product__description__icontains="Standbodenbeutel")
+                )
+                .filter(order__order_date__range=[start_datetime, end_datetime])
+                .values('product__description')
+                .annotate(total_used=Sum('quantity'))
+                .order_by('-total_used')
+            )
+    
     context = {
+        'form': form,
         'box_products': box_products,
     }
 

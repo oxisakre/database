@@ -11,19 +11,19 @@ from django.db.models.functions import Round
 
 
 def home(request):
-    # Aquí puedes ajustar el rango de fechas según lo que necesites
-    end_date = timezone.now().date()  # Fecha de hoy
-    start_date = end_date - timedelta(days=60)
-
-    # Filtra las órdenes por fecha y las ordena por fecha de orden de forma descendente
-    orders = Order.objects.filter(order_date__range=[start_date, end_date]).order_by('-order_date')
+    # Retrieve all orders and order them by date, descending
+    orders = Order.objects.all().order_by('-order_date')
     
-    # Configura la paginación, mostrando 20 órdenes por página
-    paginator = Paginator(orders, 20)  
+    # Convert order_date to the local timezone for each order
+    for order in orders:
+        order.order_date = timezone.localtime(order.order_date)
+    
+    # Set up pagination, showing 20 orders per page
+    paginator = Paginator(orders, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Renderiza la plantilla con el objeto de paginación
+    # Render the template with the paginated orders
     return render(request, 'home.html', {'orders': page_obj})
 
 

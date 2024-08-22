@@ -29,14 +29,18 @@ def load_orders(cursor):
             p.nAnzahl AS quantity,
             p.fVKNetto AS net_price,
             va.fPrice AS shipping_cost,
-            va.cName AS shipping_method
+            va.cName AS shipping_method,
+            pay.PaymentMethod,
+            plat.cName AS platform_name
         FROM dbo.tBestellung b
         JOIN dbo.tBestellPos p ON b.kBestellung = p.tBestellung_kBestellung
         LEFT JOIN dbo.tVersand v ON b.kBestellung = v.kVersand
         LEFT JOIN dbo.tVersandArt va ON v.kVersandArt = va.kVersandArt
+        LEFT JOIN eazybusiness.Report.SalesOrderPayments pay ON b.kBestellung = pay.SalesOrderInternalId
+        LEFT JOIN dbo.tPlattform plat ON CAST(b.nPlatform AS NVARCHAR) = plat.cID
         WHERE b.dErstellt >= CONVERT(datetime, ?, 120)
-    """
 
+    """
     cursor.execute(query, (start_date_str))
     
     orders_dict = {}
@@ -54,7 +58,9 @@ def load_orders(cursor):
                 'shipping_cost': row.shipping_cost or Decimal('0.00'),
                 'shipping_method': row.shipping_method or "None",
                 'total_amount': Decimal('0.00'),
-                'products': []
+                'products': [],
+                'payment_method': row.PaymentMethod,  # Añadir el método de pago
+                'platform': row.platform_name  # Añadir la plataforma
             }
         
         try:
@@ -75,7 +81,6 @@ def load_orders(cursor):
         save_order(order_number, order_data)
 
 def save_order(order_number, order_data):
-    
     try:
         customer = Customer.objects.get(customer_id=order_data['customer_id'])
         
@@ -86,10 +91,12 @@ def save_order(order_number, order_data):
             order_number=order_number,
             defaults={
                 'customer': customer,
-                'order_date': order_date,  # Guardar la fecha en UTC
+                'order_date': order_date,
                 'total_amount': order_data['total_amount'] + order_data['shipping_cost'],
                 'shipping_cost': order_data['shipping_cost'],
-                'shipping_method': order_data['shipping_method']
+                'shipping_method': order_data['shipping_method'],
+                'payment_method': order_data.get('payment_method', ''),  # Añadir el método de pago
+                'platform': order_data.get('platform_name', '')  # Añadir la plataforma
             }
         )
 

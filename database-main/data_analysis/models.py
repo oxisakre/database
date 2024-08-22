@@ -29,7 +29,8 @@ class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     order_date = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=50)
+    payment_method = models.CharField(max_length=100, null=True, blank=True)
+    platform = models.CharField(max_length=100, null=True, blank=True)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2)
     products = models.ManyToManyField(Product, through='OrderProduct')
     shipping_method = models.CharField(max_length=255, null=True, blank=True)  # Añadir este campo

@@ -2,10 +2,14 @@
 
 <h2>Customer Information</h2>
 <p>Name: {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+<p>Email: {{ order.customer.email }}</p>
+<p>Shipping Address: {{ order.customer.street }} , {{ order.customer.postal_code }} {{ order.customer.city }}</p>
 <p>Order Date: {{ order.order_date }}</p>
 <p>Total Amount: {{ order.total_amount }}</p>
 <p>Shipping Cost: {{ order.shipping_cost }}</p>
-<p>Shipping Method: {{ shipping_method }}</p>
+<p>Shipping Method: {{ order.shipping_method }}</p>
+<p>Platform: {{ order.platform }}</p>
+<p>Payment method: {{ order.payment_method }}</p>
 <!-- Aquí se muestra el método de envío -->
 <h2>Products</h2>
 <table>

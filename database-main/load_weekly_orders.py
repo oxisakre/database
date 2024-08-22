@@ -17,6 +17,7 @@ from load_data import connect_to_sql_server
 def load_orders(cursor):
     start_date = datetime.now() - timedelta(days=60)
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    
     query = """
         SELECT
             b.kBestellung AS order_id,
@@ -30,16 +31,16 @@ def load_orders(cursor):
             p.fVKNetto AS net_price,
             va.fPrice AS shipping_cost,
             va.cName AS shipping_method,
-            pay.PaymentMethod,
-            plat.cName AS platform_name
+            plat.Name AS platform_name,
+            vRechnung.cZahlungsart AS payment_method,
+            vRechnung.cAnmerkung AS comments
         FROM dbo.tBestellung b
         JOIN dbo.tBestellPos p ON b.kBestellung = p.tBestellung_kBestellung
         LEFT JOIN dbo.tVersand v ON b.kBestellung = v.kVersand
         LEFT JOIN dbo.tVersandArt va ON v.kVersandArt = va.kVersandArt
-        LEFT JOIN eazybusiness.Report.SalesOrderPayments pay ON b.kBestellung = pay.SalesOrderInternalId
-        LEFT JOIN dbo.tPlattform plat ON CAST(b.nPlatform AS NVARCHAR) = plat.cID
+        LEFT JOIN [eazybusiness].[Rechnung].[vRechnung] vRechnung ON b.kBestellung = vRechnung.kRechnung
+        LEFT JOIN [eazybusiness].[BI].[PlatformName] plat ON CAST(b.nPlatform AS NVARCHAR) = plat.PlatformID
         WHERE b.dErstellt >= CONVERT(datetime, ?, 120)
-
     """
     cursor.execute(query, (start_date_str))
     
@@ -48,7 +49,6 @@ def load_orders(cursor):
     for row in cursor.fetchall():
         order_number = row.order_number
         if order_number not in orders_dict:
-            # Aquí hacemos la fecha aware (si es naive) y luego la convertimos a UTC
             order_date = timezone.make_aware(row.order_date, timezone.get_default_timezone())
             order_date = order_date.astimezone(timezone.utc)  # Convertir a UTC
 
@@ -57,10 +57,12 @@ def load_orders(cursor):
                 'order_date': order_date,  # Almacenar la fecha en UTC
                 'shipping_cost': row.shipping_cost or Decimal('0.00'),
                 'shipping_method': row.shipping_method or "None",
+                'payment_method': row.payment_method or "None",
+                'platform_name': row.platform_name or "None",
+                'comments': row.comments or "",
+                'is_new_customer': "Neukunde" in (row.comments or ""),  # Identificar si es nuevo cliente
                 'total_amount': Decimal('0.00'),
-                'products': [],
-                'payment_method': row.PaymentMethod,  # Añadir el método de pago
-                'platform': row.platform_name  # Añadir la plataforma
+                'products': []
             }
         
         try:
@@ -84,7 +86,6 @@ def save_order(order_number, order_data):
     try:
         customer = Customer.objects.get(customer_id=order_data['customer_id'])
         
-        # order_date ya debería estar en UTC al ser pasado a esta función
         order_date = order_data['order_date']
 
         order, created = Order.objects.update_or_create(
@@ -95,8 +96,10 @@ def save_order(order_number, order_data):
                 'total_amount': order_data['total_amount'] + order_data['shipping_cost'],
                 'shipping_cost': order_data['shipping_cost'],
                 'shipping_method': order_data['shipping_method'],
-                'payment_method': order_data.get('payment_method', ''),  # Añadir el método de pago
-                'platform': order_data.get('platform_name', '')  # Añadir la plataforma
+                'payment_method': order_data['payment_method'],
+                'platform': order_data['platform_name'],
+                'comments': order_data['comments'],
+                'is_new_customer': order_data['is_new_customer']
             }
         )
 
@@ -127,4 +130,5 @@ def main():
     connection.close()
 
 if __name__ == "__main__":
+    main()
     main()

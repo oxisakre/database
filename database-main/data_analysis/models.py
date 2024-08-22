@@ -35,6 +35,7 @@ class Order(models.Model):
     products = models.ManyToManyField(Product, through='OrderProduct')
     shipping_method = models.CharField(max_length=255, null=True, blank=True, default="None")
     comments = models.TextField(null=True, blank=True)  # Nuevo campo para comentarios
+    cAnmerkung = models.TextField(null=True, blank=True)
     is_new_customer = models.BooleanField(default=False)  # Nuevo campo para indicar si es un cliente nuevo
 
     def __str__(self):

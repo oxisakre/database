@@ -31,17 +31,21 @@ def load_orders(cursor):
             p.fVKNetto AS net_price,
             va.fPrice AS shipping_cost,
             va.cName AS shipping_method,
-            plat.Name AS platform_name,
-            vRechnung.cZahlungsart AS payment_method,
-            vRechnung.cAnmerkung AS comments
+            pay.PaymentMethod AS payment_method,
+            plat.Name AS platform_name,  # Nombre de la plataforma
+            plat.PlatformID AS platform_id,  # ID de la plataforma
+            r.cAnmerkung AS order_comment,  # Comentario de la orden
+            CASE WHEN r.cAnmerkung LIKE '%Neukunde%' THEN 1 ELSE 0 END AS is_new_customer  # Nuevo cliente
         FROM dbo.tBestellung b
         JOIN dbo.tBestellPos p ON b.kBestellung = p.tBestellung_kBestellung
         LEFT JOIN dbo.tVersand v ON b.kBestellung = v.kVersand
         LEFT JOIN dbo.tVersandArt va ON v.kVersandArt = va.kVersandArt
-        LEFT JOIN [eazybusiness].[Rechnung].[vRechnung] vRechnung ON b.kBestellung = vRechnung.kRechnung
-        LEFT JOIN [eazybusiness].[BI].[PlatformName] plat ON CAST(b.nPlatform AS NVARCHAR) = plat.PlatformID
+        LEFT JOIN [Rechnung].[vRechnung] r ON b.kBestellung = r.kRechnung
+        LEFT JOIN [BI].[PlatformName] plat ON r.kPlattform = plat.PlatformID
+        LEFT JOIN [Report].[SalesOrderPayments] pay ON b.kBestellung = pay.SalesOrderInternalId
         WHERE b.dErstellt >= CONVERT(datetime, ?, 120)
     """
+
     cursor.execute(query, (start_date_str))
     
     orders_dict = {}
@@ -86,7 +90,14 @@ def save_order(order_number, order_data):
     try:
         customer = Customer.objects.get(customer_id=order_data['customer_id'])
         
+        # order_date ya debería estar en UTC al ser pasado a esta función
         order_date = order_data['order_date']
+
+        # Determinar si es un nuevo cliente basado en los comentarios
+        is_new_customer = False
+        if 'comments' in order_data and order_data['comments']:
+            keywords = ['Neukunde', 'New Customer', 'Nuevo cliente']
+            is_new_customer = any(keyword in order_data['comments'] for keyword in keywords)
 
         order, created = Order.objects.update_or_create(
             order_number=order_number,
@@ -98,8 +109,8 @@ def save_order(order_number, order_data):
                 'shipping_method': order_data['shipping_method'],
                 'payment_method': order_data['payment_method'],
                 'platform': order_data['platform_name'],
-                'comments': order_data['comments'],
-                'is_new_customer': order_data['is_new_customer']
+                'comments': order_data.get('comments', ''),
+                'is_new_customer': is_new_customer
             }
         )
 

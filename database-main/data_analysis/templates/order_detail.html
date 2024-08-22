@@ -10,7 +10,9 @@
 <p>Shipping Method: {{ order.shipping_method }}</p>
 <p>Platform: {{ order.platform }}</p>
 <p>Payment method: {{ order.payment_method }}</p>
-<!-- Aquí se muestra el método de envío -->
+<p>Comentario: {{ order.order_comment }}</p>
+<p>Nuevo cliente: {% if order.is_new_customer %} Sí {% else %} No {% endif %}</p>
+
 <h2>Products</h2>
 <table>
   <tr>

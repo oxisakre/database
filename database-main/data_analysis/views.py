@@ -38,7 +38,7 @@ def order_detail(request, order_id):
         'total_amount_with_shipping': total_amount_with_shipping,
         'shipping_method': order.shipping_method,
         'is_new_customer': order.is_new_customer,  # Nuevo campo
-        'order_comment': order.cAnmerkung,  # Comentario de la orden
+        'comments': order.comments,  # Comentario de la orden
     }
     return render(request, 'order_detail.html', context)
 

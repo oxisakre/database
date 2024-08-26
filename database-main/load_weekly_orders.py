@@ -31,22 +31,23 @@ def load_orders(cursor):
             p.fVKNetto AS net_price,
             va.fPrice AS shipping_cost,
             va.cName AS shipping_method,
-            pay.PaymentMethod AS payment_method,
-            plat.Name AS platform_name,  # Nombre de la plataforma
-            plat.PlatformID AS platform_id,  # ID de la plataforma
-            r.cAnmerkung AS order_comment,  # Comentario de la orden
-            CASE WHEN r.cAnmerkung LIKE '%Neukunde%' THEN 1 ELSE 0 END AS is_new_customer  # Nuevo cliente
+            pm.Name AS payment_method,
+            plat.Name AS platform_name,
+            b.cAnmerkung AS order_comment,
+            CASE WHEN b.cAnmerkung LIKE '%Neukunde%' THEN 1 ELSE 0 END AS is_new_customer,
+            s.TotalNetPrice AS total_net_price  -- Añadir este campo
         FROM dbo.tBestellung b
         JOIN dbo.tBestellPos p ON b.kBestellung = p.tBestellung_kBestellung
         LEFT JOIN dbo.tVersand v ON b.kBestellung = v.kVersand
         LEFT JOIN dbo.tVersandArt va ON v.kVersandArt = va.kVersandArt
-        LEFT JOIN [Rechnung].[vRechnung] r ON b.kBestellung = r.kRechnung
-        LEFT JOIN [BI].[PlatformName] plat ON r.kPlattform = plat.PlatformID
-        LEFT JOIN [Report].[SalesOrderPayments] pay ON b.kBestellung = pay.SalesOrderInternalId
+        LEFT JOIN [Rechnung].[vRechnung] r ON b.tRechnung_kRechnung = r.kRechnung
+        LEFT JOIN [Report].[PaymentMethod] pm ON b.kZahlungsart = pm.InternalId
+        LEFT JOIN [BI].[PlatformName] plat ON b.nPlatform = plat.PlatformID
+        LEFT JOIN [Report].[SalesOrder] s ON b.cBestellNr = s.SalesOrderNumber  -- Unir con SalesOrder para obtener el TotalNetPrice
         WHERE b.dErstellt >= CONVERT(datetime, ?, 120)
     """
 
-    cursor.execute(query, (start_date_str))
+    cursor.execute(query, (start_date_str,))
     
     orders_dict = {}
 
@@ -63,9 +64,9 @@ def load_orders(cursor):
                 'shipping_method': row.shipping_method or "None",
                 'payment_method': row.payment_method or "None",
                 'platform_name': row.platform_name or "None",
-                'comments': row.comments or "",
-                'is_new_customer': "Neukunde" in (row.comments or ""),  # Identificar si es nuevo cliente
-                'total_amount': Decimal('0.00'),
+                'total_net_price': row.total_net_price or Decimal('0.00'),  # Aquí agregas el precio neto total
+                'comments': row.order_comment or "",
+                'is_new_customer': row.is_new_customer,
                 'products': []
             }
         
@@ -80,7 +81,6 @@ def load_orders(cursor):
             'quantity': row.quantity,
             'net_price': row.net_price
         })
-        orders_dict[order_number]['total_amount'] += row.net_price * row.quantity
     
     for order_number, order_data in orders_dict.items():
         print(f"Before saving: Order Number: {order_number}, Date (UTC): {order_data['order_date']}")
@@ -104,13 +104,13 @@ def save_order(order_number, order_data):
             defaults={
                 'customer': customer,
                 'order_date': order_date,
-                'total_amount': order_data['total_amount'] + order_data['shipping_cost'],
+                'total_amount': order_data['total_net_price'],  # Usar directamente el total neto
                 'shipping_cost': order_data['shipping_cost'],
                 'shipping_method': order_data['shipping_method'],
                 'payment_method': order_data['payment_method'],
                 'platform': order_data['platform_name'],
                 'comments': order_data.get('comments', ''),
-                'is_new_customer': is_new_customer
+                'is_new_customer': order_data['is_new_customer']
             }
         )
 
@@ -141,5 +141,4 @@ def main():
     connection.close()
 
 if __name__ == "__main__":
-    main()
     main()

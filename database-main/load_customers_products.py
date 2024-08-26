@@ -47,13 +47,14 @@ def load_customers(cursor):
 def load_products(cursor):
     query = """
     SELECT DISTINCT
-        p.tArtikel_kArtikel AS product_id,
-        p.cArtNr AS product_number,
-        p.cString AS description,
-        p.fVKNetto AS price
-    FROM dbo.tBestellPos p
-    WHERE p.cArtNr IS NOT NULL AND p.cArtNr != '' 
-    GROUP BY p.tArtikel_kArtikel, p.cArtNr, p.cString, p.fVKNetto
+        sa.kArtikel AS product_id,
+        sa.cArtNr AS product_number,
+        sa.cName AS description,
+        sa.fVKNetto AS price
+    FROM [eazybusiness].[dbo].[vStandardArtikel] sa
+    WHERE sa.cArtNr IS NOT NULL AND sa.cArtNr != ''
+    GROUP BY sa.kArtikel, sa.cArtNr, sa.cName, sa.fVKNetto
+
     """
     
     cursor.execute(query)

@@ -2,6 +2,7 @@
 
 <h2>Customer Information</h2>
 <p>Name: {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+<p>Customer Number: {{ order.customer.customer_number }}</p>
 <p>Email: {{ order.customer.email }}</p>
 <p>Shipping Address: {{ order.customer.street }} , {{ order.customer.postal_code }} {{ order.customer.city }}</p>
 <p>Order Date: {{ order.order_date }}</p>
@@ -10,7 +11,7 @@
 <p>Shipping Method: {{ order.shipping_method }}</p>
 <p>Platform: {{ order.platform }}</p>
 <p>Payment method: {{ order.payment_method }}</p>
-<p>Comentario: {{ order.order_comment }}</p>
+<p>Comentario: {{ order.comments }}</p>
 <p>Nuevo cliente: {% if order.is_new_customer %} Sí {% else %} No {% endif %}</p>
 
 <h2>Products</h2>

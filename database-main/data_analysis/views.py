@@ -44,51 +44,50 @@ def order_detail(request, order_id):
 
 
 def stats_view(request):
-    selected_date = None
+    form = DateRangeForm(request.POST or None)  # Utiliza un formulario para rango de fechas
     top_products = []
     daily_revenue = 0
     weekly_revenue = 0
     monthly_revenue = 0
 
-    if request.method == 'POST':
-        form = DateSelectorForm(request.POST)
-        if form.is_valid():
-            selected_date = form.cleaned_data['selected_date']
-            start_datetime = datetime.combine(selected_date, datetime.min.time())
-            end_datetime = datetime.combine(selected_date, datetime.max.time())
+    if form.is_valid():
+        start_date = form.cleaned_data['start_date']
+        end_date = form.cleaned_data['end_date']
+        start_datetime = datetime.combine(start_date, datetime.min.time())
+        end_datetime = datetime.combine(end_date, datetime.max.time())
 
-            # Obtener los productos vendidos en la fecha seleccionada
-            top_products = (
-                OrderProduct.objects
-                .exclude(product__description__icontains="Therapeutengutschein") 
-                .exclude(product__description__icontains="Karton")
-                .exclude(Q(product__description__icontains="PF42") | Q(product__description__icontains="CHV26") | Q(product__description__icontains="CAD38") | Q(product__description__icontains="CAD09A") | Q(product__description__icontains="CAS06") | Q(product__description__icontains="CAD13E") | Q(product__description__icontains="CHA60") | Q(product__description__icontains="PFD50") | Q(product__description__icontains="Standbodenbeutel"))
-                .filter(order__order_date__range=[start_datetime, end_datetime])
-                .values('product__description')
-                .annotate(
-                    total_quantity=Sum('quantity'),
-                    total_revenue=Sum(F('quantity') * F('net_price'))
-                )
-                .order_by('-total_quantity')
+        # Filtrar productos por el rango de fechas
+        top_products = (
+            OrderProduct.objects
+            .filter(order__order_date__range=[start_datetime, end_datetime])
+            .exclude(product__description__icontains="Therapeutengutschein") 
+            .exclude(product__description__icontains="Karton")
+            .exclude(Q(product__description__icontains="PF42") | Q(product__description__icontains="CHV26") | Q(product__description__icontains="CAD38") | Q(product__description__icontains="CAD09A") | Q(product__description__icontains="CAS06") | Q(product__description__icontains="CAD13E") | Q(product__description__icontains="CHA60") | Q(product__description__icontains="PFD50") | Q(product__description__icontains="Standbodenbeutel"))
+            .values('product__description')
+            .annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum(F('quantity') * F('net_price'))
             )
+            .order_by('-total_quantity')
+        )
 
-            # Redondear después de obtener los resultados
-            top_products = [
-                {
-                    'product__description': product['product__description'],
-                    'total_quantity': product['total_quantity'],
-                    'total_revenue': round(product['total_revenue'], 2)
-                }
-                for product in top_products
-            ]
+        # Redondear después de obtener los resultados
+        top_products = [
+            {
+                'product__description': product['product__description'],
+                'total_quantity': product['total_quantity'],
+                'total_revenue': round(product['total_revenue'], 2)
+            }
+            for product in top_products
+        ]
 
-            # Calcular el ingreso total en la fecha seleccionada
-            daily_revenue = Order.objects.filter(order_date__range=[start_datetime, end_datetime]).aggregate(total_revenue=Sum('total_amount'))['total_revenue']
-            daily_revenue = round(daily_revenue) if daily_revenue else 0
+        # Calcular ingresos en el rango seleccionado
+        daily_revenue = Order.objects.filter(order_date__range=[start_datetime, end_datetime]).aggregate(total_revenue=Sum('total_amount'))['total_revenue']
+        daily_revenue = round(daily_revenue) if daily_revenue else 0
+
     else:
-        form = DateSelectorForm()
-
         # Si no se ha seleccionado ninguna fecha, mostrar las estadísticas generales
+        form = DateRangeForm()  # Mostrar el formulario vacío para nueva entrada
         top_products = (
             OrderProduct.objects
             .exclude(product__description__icontains="Therapeutengutschein") 
@@ -127,7 +126,7 @@ def stats_view(request):
 
     context = {
         'form': form,
-        'selected_date': selected_date,
+        'selected_date': None,
         'top_products': top_products,
         'daily_revenue': daily_revenue,
         'weekly_revenue': weekly_revenue,

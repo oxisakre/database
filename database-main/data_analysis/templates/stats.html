@@ -1,34 +1,89 @@
-<!-- stats.html -->
-<h1>Statistics</h1>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Statistics</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        line-height: 1.6;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      form {
+        margin-bottom: 20px;
+      }
+      input,
+      select,
+      button {
+        padding: 10px;
+        margin: 5px;
+        font-size: 14px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        background: #f4f4f4;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+      .statistics-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .revenue {
+        font-weight: bold;
+        color: #0056b3;
+      }
+      .date-range {
+        margin-bottom: 20px;
+      }
+      .back-link {
+        margin-top: 20px;
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .back-link:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Statistics</h1>
 
-<form method="post">
-  {% csrf_token %} {{ form.as_p }}
-  <button type="submit">Submit</button>
-</form>
+    <form method="post">
+      {% csrf_token %} {{ form.as_p }}
+      <button type="submit">Submit</button>
+    </form>
 
-{% if selected_date %}
-<h2>Top Sold Products on {{ selected_date }}</h2>
-{% if top_products %}
-<ul>
-  {% for product in top_products %}
-  <li>{{ product.product__description }} - <strong>x{{ product.total_quantity }}</strong> - €{{ product.total_revenue }}</li>
-  {% endfor %}
-</ul>
-<p><strong>Daily Revenue:</strong> ${{ daily_revenue }}</p>
-{% else %}
-<p>No products sold on this date.</p>
-{% endif %} {% else %}
-<h2>Top 20 Most Sold Products</h2>
-{% if top_products %}
-<ul>
-  {% for product in top_products %}
-  <li>{{ product.product__description }} - {{ product.total_quantity }} units sold</li>
-  {% endfor %}
-</ul>
-{% else %}
-<p>No products sold yet.</p>
-{% endif %}
-<p><strong>Weekly Revenue:</strong> ${{ weekly_revenue }}</p>
-<p><strong>Monthly Revenue:</strong> ${{ monthly_revenue }}</p>
-{% endif %}
-<a href="{% url 'home' %}">Back to Orders</a>
+    <div class="statistics-container">
+      {% if top_products %}
+      <p class="revenue"><strong>Selected Date:</strong> €{{ daily_revenue }}</p>
+      <p class="revenue"><strong>Weekly:</strong> €{{ weekly_revenue }}</p>
+      <p class="revenue"><strong>Monthly:</strong> €{{ monthly_revenue }}</p>
+      <h2>Top Sold Products from {{ form.cleaned_data.start_date }} to {{ form.cleaned_data.end_date }}</h2>
+      <ul>
+        {% for product in top_products %}
+        <li>{{ product.product__description }} - <strong>x{{ product.total_quantity }}</strong> - €{{ product.total_revenue }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No products sold in this range.</p>
+      {% endif %}
+    </div>
+
+    <a href="{% url 'home' %}" class="back-link">Back to Orders</a>
+  </body>
+</html>

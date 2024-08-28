@@ -1,54 +1,117 @@
-{% load tz %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <a href="{% url 'stats_view' %}">View Statistics</a>
-    <a href="{% url 'box_usage' %}">View Box Usage Statistics</a>
     <title>Orders List</title>
+    <a href="{% url 'stats_view' %}" class="stats-link">View Statistics</a>
+    <a href="{% url 'box_usage' %}" class="boxes-link">View Box Usage Statistics</a>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+      .pagination {
+        margin-top: 20px;
+        text-align: center;
+      }
+      .pagination a {
+        margin: 0 5px;
+        text-decoration: none;
+        padding: 5px 10px;
+        color: #007bff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .pagination a:hover {
+        background-color: #ddd;
+      }
+      .stats-link {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .stats-link:hover {
+        background-color: #0056b3;
+      }
+      .boxes-link {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #e28f12;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .boxes-link:hover {
+        background-color: #b06b03;
+      }
+    </style>
   </head>
   <body>
     <h1>Orders List</h1>
+
     <table>
-      <tr>
-        <th>Order Number</th>
-        <th>Customer</th>
-        <th>Date</th>
-        <th>Total Amount</th>
-        <th>Shipping Cost</th>
-        <th>Details</th>
-      </tr>
-      {% for order in orders %}
-      <tr>
-        <td>{{ order.order_number }}</td>
-        <td>{{ order.customer.first_name }} {{ order.customer.last_name }}</td>
-        <td>{{ order.order_date }}</td>
-        <td>{{ order.total_amount }}</td>
-        <td>{{ order.shipping_cost }}</td>
-        <td><a href="{% url 'order_detail' order.pk %}">View Details</a></td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6">No orders found.</td>
-      </tr>
-      {% endfor %}
+      <thead>
+        <tr>
+          <th>Order Number</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Total Amount</th>
+          <th>Shipping Cost</th>
+          <th>Platform</th>
+          <th>Payment Method</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.order_number }}</td>
+          <td>{{ order.customer.first_name }} {{ order.customer.last_name }}</td>
+          <td>{{ order.order_date|date:"M d, Y, h:i a" }}</td>
+          <td>{{ order.total_amount }}</td>
+          <td>{{ order.shipping_cost }}</td>
+          <td>{{ order.platform }}</td>
+          <td>{{ order.payment_method }}</td>
+          <td><a href="{% url 'order_detail' order_id=order.order_id %}">View Details</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
     <div class="pagination">
-      <span class="step-links">
-        {% if orders.has_previous %}
-        <a href="?page=1">&laquo; first</a>
-        <a href="?page={{ orders.previous_page_number }}">Previous</a>
-        {% endif %}
-
-        <span class="current"> Page {{ orders.number }} of {{ orders.paginator.num_pages }}. </span>
-
-        {% if orders.has_next %}
-        <a href="?page={{ orders.next_page_number }}">next</a>
-        <a href="?page={{ orders.paginator.num_pages }}">last &raquo;</a>
-        {% endif %}
-      </span>
+      {% if orders.has_previous %}
+      <a href="?page=1">&laquo; first</a>
+      <a href="?page={{ orders.previous_page_number }}">previous</a>
+      {% endif %}
+      <span>Page {{ orders.number }} of {{ orders.paginator.num_pages }}</span>
+      {% if orders.has_next %}
+      <a href="?page={{ orders.next_page_number }}">next</a>
+      <a href="?page={{ orders.paginator.num_pages }}">last &raquo;</a>
+      {% endif %}
     </div>
   </body>
 </html>

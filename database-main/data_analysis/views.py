@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Order, OrderProduct
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import timedelta, datetime
 from django.utils import timezone  
 from decimal import Decimal
@@ -44,93 +44,87 @@ def order_detail(request, order_id):
 
 
 def stats_view(request):
-    form = DateRangeForm(request.POST or None)  # Utiliza un formulario para rango de fechas
+    form = DateRangeForm(request.POST or None)
     top_products = []
-    daily_revenue = 0
-    weekly_revenue = 0
-    monthly_revenue = 0
+    daily_revenue = weekly_revenue = monthly_revenue = 0
+    platform_usage = []
+    payment_methods = []
+
+    # Fechas predeterminadas para el cálculo
+    today = datetime.now()
+    one_week_ago = today - timedelta(days=7)
+    one_month_ago = today - timedelta(days=30)
 
     if form.is_valid():
+        # Rango de fechas seleccionado por el usuario
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
         start_datetime = datetime.combine(start_date, datetime.min.time())
         end_datetime = datetime.combine(end_date, datetime.max.time())
 
-        # Filtrar productos por el rango de fechas
-        top_products = (
-            OrderProduct.objects
-            .filter(order__order_date__range=[start_datetime, end_datetime])
-            .exclude(product__description__icontains="Therapeutengutschein") 
-            .exclude(product__description__icontains="Karton")
-            .exclude(Q(product__description__icontains="PF42") | Q(product__description__icontains="CHV26") | Q(product__description__icontains="CAD38") | Q(product__description__icontains="CAD09A") | Q(product__description__icontains="CAS06") | Q(product__description__icontains="CAD13E") | Q(product__description__icontains="CHA60") | Q(product__description__icontains="PFD50") | Q(product__description__icontains="Standbodenbeutel"))
-            .values('product__description')
-            .annotate(
-                total_quantity=Sum('quantity'),
-                total_revenue=Sum(F('quantity') * F('net_price'))
-            )
-            .order_by('-total_quantity')
-        )
-
-        # Redondear después de obtener los resultados
-        top_products = [
-            {
-                'product__description': product['product__description'],
-                'total_quantity': product['total_quantity'],
-                'total_revenue': round(product['total_revenue'], 2)
-            }
-            for product in top_products
-        ]
-
-        # Calcular ingresos en el rango seleccionado
-        daily_revenue = Order.objects.filter(order_date__range=[start_datetime, end_datetime]).aggregate(total_revenue=Sum('total_amount'))['total_revenue']
-        daily_revenue = round(daily_revenue) if daily_revenue else 0
-
+        # Calcular ingresos para el rango de fechas seleccionado
+        selected_revenue = Order.objects.filter(order_date__range=[start_datetime, end_datetime]).aggregate(total_revenue=Sum('total_amount'))['total_revenue'] or 0
     else:
-        # Si no se ha seleccionado ninguna fecha, mostrar las estadísticas generales
-        form = DateRangeForm()  # Mostrar el formulario vacío para nueva entrada
-        top_products = (
-            OrderProduct.objects
-            .exclude(product__description__icontains="Therapeutengutschein") 
-            .exclude(product__description__icontains="Karton")
-            .exclude(Q(product__description__icontains="PF42") | Q(product__description__icontains="CHV26") | Q(product__description__icontains="CAD38") | Q(product__description__icontains="CAD09A") | Q(product__description__icontains="CAS06") | Q(product__description__icontains="CAD13E") | Q(product__description__icontains="CHA60") | Q(product__description__icontains="PFD50") | Q(product__description__icontains="Standbodenbeutel"))
-            .values('product__description')
-            .annotate(
-                total_quantity=Sum('quantity'),
-                total_revenue=Sum(F('quantity') * F('net_price'))
-            )
-            .order_by('-total_quantity')[:20]
+        # Rango de fechas predeterminado para la vista inicial
+        start_datetime = one_month_ago
+        end_datetime = today
+        selected_revenue = Order.objects.filter(order_date__range=[today, today]).aggregate(total_revenue=Sum('total_amount'))['total_revenue'] or 0
+
+    # Obtener los productos vendidos en el rango de fechas seleccionado
+    top_products = (
+        OrderProduct.objects
+        .filter(order__order_date__range=[start_datetime, end_datetime])
+        .exclude(product__description__icontains="Therapeutengutschein") 
+        .exclude(product__description__icontains="Karton")
+        .exclude(Q(product__description__icontains="PF42") | Q(product__description__icontains="CHV26") | Q(product__description__icontains="CAD38") | Q(product__description__icontains="CAD09A") | Q(product__description__icontains="CAS06") | Q(product__description__icontains="CAD13E") | Q(product__description__icontains="CHA60") | Q(product__description__icontains="PFD50") | Q(product__description__startswith="TH") | Q(product__description__icontains="Standbodenbeutel"))
+        .values('product__description')
+        .annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum(F('quantity') * F('net_price'))
         )
+        .order_by('-total_quantity')
+    )
 
-        # Redondear después de obtener los resultados
-        top_products = [
-            {
-                'product__description': product['product__description'],
-                'total_quantity': product['total_quantity'],
-                'total_revenue': round(product['total_revenue'], 2)
-            }
-            for product in top_products
-        ]
+    # Paginación de productos
+    paginator = Paginator(top_products, 20)
+    page = request.GET.get('page', 1)
+    try:
+        paginated_products = paginator.page(page)
+    except PageNotAnInteger:
+        paginated_products = paginator.page(1)
+    except EmptyPage:
+        paginated_products = paginator.page(paginator.num_pages)
 
-        # Calcular el ingreso total por semana
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=7)
-        weekly_revenue = Order.objects.filter(order_date__range=[start_date, end_date]).aggregate(total_revenue=Sum('total_amount'))['total_revenue']
+    # Calcular ingresos semanales y mensuales
+    weekly_revenue = Order.objects.filter(order_date__range=[one_week_ago, today]).aggregate(total_revenue=Sum('total_amount'))['total_revenue'] or 0
+    monthly_revenue = Order.objects.filter(order_date__range=[one_month_ago, today]).aggregate(total_revenue=Sum('total_amount'))['total_revenue'] or 0
 
-        # Calcular el ingreso total por mes
-        start_date = end_date - timedelta(days=30)
-        monthly_revenue = Order.objects.filter(order_date__range=[start_date, end_date]).aggregate(total_revenue=Sum('total_amount'))['total_revenue']
+    # Usos de plataforma
+    platform_usage = (
+        Order.objects.filter(order_date__range=[start_datetime, end_datetime])
+        .values('platform')
+        .annotate(usage_count=Count('platform'))
+        .order_by('-usage_count')
+    )
 
-        # Redondear los ingresos a enteros
-        weekly_revenue = round(weekly_revenue) if weekly_revenue else 0
-        monthly_revenue = round(monthly_revenue) if monthly_revenue else 0
+    # Métodos de pago
+    payment_methods = (
+        Order.objects.filter(order_date__range=[start_datetime, end_datetime])
+        .values('payment_method')
+        .annotate(method_count=Count('payment_method'))
+        .order_by('-method_count')
+    )
 
     context = {
         'form': form,
-        'selected_date': None,
-        'top_products': top_products,
-        'daily_revenue': daily_revenue,
+        'top_products': paginated_products,
+        'daily_revenue': selected_revenue,  # Aquí mostramos el ingreso del rango de fechas seleccionado
         'weekly_revenue': weekly_revenue,
         'monthly_revenue': monthly_revenue,
+        'platform_usage': platform_usage,
+        'payment_methods': payment_methods,
+        'start_date': start_datetime.date(),
+        'end_date': end_datetime.date(),
     }
 
     return render(request, 'stats.html', context)

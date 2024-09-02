@@ -1,37 +1,166 @@
-<h1>Order Detail for {{ order.order_number }}</h1>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Detail for {{ order.order_number }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f7f7f7;
+      }
 
-<h2>Customer Information</h2>
-<p>Name: {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
-<p>Customer Number: {{ order.customer.customer_number }}</p>
-<p>Email: {{ order.customer.email }}</p>
-<p>Shipping Address: {{ order.customer.street }} , {{ order.customer.postal_code }} {{ order.customer.city }}</p>
-<p>Order Date: {{ order.order_date }}</p>
-<p>Total Amount: {{ order.total_amount }}</p>
-<p>Shipping Cost: {{ order.shipping_cost }}</p>
-<p>Shipping Method: {{ order.shipping_method }}</p>
-<p>Platform: {{ order.platform }}</p>
-<p>Payment method: {{ order.payment_method }}</p>
-<p>Comentario: {{ order.comments }}</p>
-<p>Nuevo cliente: {% if order.is_new_customer %} Sí {% else %} No {% endif %}</p>
+      .container {
+        max-width: max-content;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+      }
 
-<h2>Products</h2>
-<table>
-  <tr>
-    <th>Product ID</th>
-    <th>Product Number</th>
-    <th>Product Description</th>
-    <th>Quantity</th>
-    <th>Net Price</th>
-  </tr>
-  {% for product in order.orderproduct_set.all %}
-  <tr>
-    <td>{{ product.product.product_id }}</td>
-    <td>{{ product.product.product_number }}</td>
-    <td>{{ product.product.description }}</td>
-    <td>{{ product.quantity }}</td>
-    <td>{{ product.net_price }}</td>
-  </tr>
-  {% endfor %}
-</table>
-<p>Total (Products + Shipping): {{ order.total_amount }}</p>
-<a href="{% url 'home' %}">Back to Orders</a>
+      .info-container,
+      .table-container {
+        margin: 10px;
+        flex: 1;
+      }
+
+      .info-container {
+        max-width: 40%;
+      }
+
+      .table-container {
+        max-width: 55%;
+        margin-left: auto;
+      }
+
+      h1,
+      h2 {
+        color: #009879;
+      }
+
+      p {
+        line-height: 1.6;
+        color: #333;
+      }
+
+      .styled-table {
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        min-width: 400px;
+        width: 100%;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .styled-table thead tr {
+        background-color: #009879;
+        color: #ffffff;
+        text-align: left;
+      }
+
+      .styled-table th,
+      .styled-table td {
+        padding: 12px 15px;
+      }
+
+      .styled-table tbody tr {
+        border-bottom: thin solid #dddddd;
+      }
+
+      .styled-table tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+      }
+
+      .styled-table tbody tr:last-of-type {
+        border-bottom: 2px solid #009879;
+      }
+
+      .total-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+        margin-bottom: 20px;
+      }
+
+      .total-container p {
+        font-size: 1.1em;
+        font-weight: bold;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+      }
+
+      .footer a {
+        color: #009879;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="info-container">
+        <h1>Order Detail for {{ order.order_number }}</h1>
+
+        <h2>Customer Information</h2>
+        <p><strong>Name:</strong> {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+        <p><strong>Customer Number:</strong> {{ order.customer.customer_number }}</p>
+        <p><strong>Email:</strong> {{ order.customer.email }}</p>
+        <p><strong>Shipping Address:</strong> {{ order.customer.street }} , {{ order.customer.postal_code }} {{ order.customer.city }}</p>
+        <p><strong>Order Date:</strong> {{ order.order_date }}</p>
+        <p><strong>Total Amount:</strong> €{{ order.total_amount }}</p>
+        <p><strong>Shipping Cost:</strong> €{{ order.shipping_cost }}</p>
+        <p><strong>Shipping Method:</strong> {{ order.shipping_method }}</p>
+        <p><strong>Platform:</strong> {{ order.platform }}</p>
+        <p><strong>Payment method:</strong> {{ order.payment_method }}</p>
+        <p><strong>Comentario:</strong> {{ order.comments }}</p>
+        <p><strong>Nuevo cliente:</strong> {% if order.is_new_customer %} Sí {% else %} No {% endif %}</p>
+      </div>
+
+      <div class="table-container">
+        <h2>Products</h2>
+        <table class="styled-table">
+          <thead>
+            <tr>
+              <th>Product ID</th>
+              <th>Product Number</th>
+              <th>Product Description</th>
+              <th>Quantity</th>
+              <th>Net Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in order.orderproduct_set.all %}
+            <tr>
+              <td>{{ product.product.product_id }}</td>
+              <td>{{ product.product.product_number }}</td>
+              <td>{{ product.product.description }}</td>
+              <td>{{ product.quantity }}</td>
+              <td>€{{ product.net_price }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="total-container">
+          <p>Total (Products + Shipping): €{{ order.total_amount }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="{% url 'home' %}">Back to Orders</a>
+    </div>
+  </body>
+</html>

@@ -1,89 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Statistics</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        line-height: 1.6;
-      }
-      h1,
-      h2 {
-        color: #333;
-      }
-      form {
-        margin-bottom: 20px;
-      }
-      input,
-      select,
-      button {
-        padding: 10px;
-        margin: 5px;
-        font-size: 14px;
-      }
-      ul {
-        list-style: none;
-        padding: 0;
-      }
-      li {
-        background: #f4f4f4;
-        margin: 5px 0;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-      }
-      .statistics-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .revenue {
-        font-weight: bold;
-        color: #0056b3;
-      }
-      .date-range {
-        margin-bottom: 20px;
-      }
-      .back-link {
-        margin-top: 20px;
-        display: inline-block;
-        padding: 10px 15px;
-        background-color: #007bff;
-        color: white;
-        text-decoration: none;
-        border-radius: 4px;
-      }
-      .back-link:hover {
-        background-color: #0056b3;
-      }
-    </style>
-  </head>
-  <body>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f7f7f7;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+
+  .header h1 {
+    margin: 0;
+    color: #009879;
+  }
+
+  .info-sections {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .info-section {
+    width: 30%;
+  }
+
+  .info-section h2 {
+    margin-top: 0;
+    color: #009879;
+  }
+
+  .styled-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    width: 100%;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .styled-table thead tr {
+    background-color: #009879;
+    color: #ffffff;
+    text-align: left;
+  }
+
+  .styled-table th,
+  .styled-table td {
+    padding: 12px 15px;
+  }
+
+  .styled-table tbody tr {
+    border-bottom: thin solid #dddddd;
+  }
+
+  .styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  }
+
+  .styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+  }
+
+  .footer {
+    text-align: right;
+    margin-top: 30px;
+  }
+
+  .footer a {
+    color: #009879;
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
     <h1>Statistics</h1>
-
-    <form method="post">
-      {% csrf_token %} {{ form.as_p }}
-      <button type="submit">Submit</button>
+    <form method="post" class="form-inline">
+      {% csrf_token %}
+      <div class="form-group mr-2">{{ form.start_date.label_tag }} {{ form.start_date }}</div>
+      <div class="form-group mr-2">{{ form.end_date.label_tag }} {{ form.end_date }}</div>
+      <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+  </div>
 
-    <div class="statistics-container">
-      {% if top_products %}
-      <p class="revenue"><strong>Selected Date:</strong> €{{ daily_revenue }}</p>
-      <p class="revenue"><strong>Weekly:</strong> €{{ weekly_revenue }}</p>
-      <p class="revenue"><strong>Monthly:</strong> €{{ monthly_revenue }}</p>
-      <h2>Top Sold Products from {{ form.cleaned_data.start_date }} to {{ form.cleaned_data.end_date }}</h2>
-      <ul>
-        {% for product in top_products %}
-        <li>{{ product.product__description }} - <strong>x{{ product.total_quantity }}</strong> - €{{ product.total_revenue }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p>No products sold in this range.</p>
-      {% endif %}
+  <!-- Información de Resumen -->
+  <div class="info-sections">
+    <!-- Revenue Summary -->
+    <div class="info-section">
+      <h2>Revenue Summary</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Total Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Selected Date</td>
+            <td>€{{ daily_revenue|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td>Weekly</td>
+            <td>€{{ weekly_revenue|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td>Monthly</td>
+            <td>€{{ monthly_revenue|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <a href="{% url 'home' %}" class="back-link">Back to Orders</a>
-  </body>
-</html>
+    <!-- Platform Usage -->
+    <div class="info-section">
+      <h2>Platform Usage</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Usage Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usage in platform_usage %}
+          <tr>
+            <td>{{ usage.platform }}</td>
+            <td>{{ usage.usage_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="info-section">
+      <h2>Payment Methods</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for method in payment_methods %}
+          <tr>
+            <td>{{ method.payment_method }}</td>
+            <td>{{ method.method_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Productos más vendidos -->
+  <h2>Top Sold Products from {{ start_date }} to {{ end_date }}</h2>
+  {% if top_products %}
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Net Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in top_products %}
+      <tr>
+        <td>{{ product.product__description }}</td>
+        <td>x{{ product.total_quantity }}</td>
+        <td>€{{ product.total_revenue|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No products sold in this period.</p>
+  {% endif %}
+
+  <!-- Botón de regreso -->
+  <div class="footer">
+    <a href="{% url 'home' %}">Back to Orders</a>
+  </div>
+</div>

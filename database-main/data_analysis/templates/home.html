@@ -2,9 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Orders List</title>
-    <a href="{% url 'stats_view' %}" class="stats-link">View Statistics</a>
-    <a href="{% url 'box_usage' %}" class="boxes-link">View Box Usage Statistics</a>
+
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -34,6 +32,11 @@
       .pagination {
         margin-top: 20px;
         text-align: center;
+      }
+      .container {
+        display: grid;
+        /* flex-direction: row;
+        justify-content: space-between; */
       }
       .pagination a {
         margin: 0 5px;
@@ -68,11 +71,25 @@
       .boxes-link:hover {
         background-color: #b06b03;
       }
+      .title {
+        text-align: center;
+      }
     </style>
   </head>
   <body>
-    <h1>Orders List</h1>
-
+    <h2 class="title">Orders List</h2>
+    <div class="container">
+      <div style="grid-template-columns: repeat(3, minmax(0, 1fr))">
+        <a href="{% url 'stats_view' %}" class="stats-link">View Statistics</a>
+        <a href="{% url 'box_usage' %}" class="boxes-link">View Box Usage Statistics</a>
+      </div>
+      <form method="get" action="{% url 'home' %}">
+        <input type="text" name="search" placeholder="Search by product..." value="{{ request.GET.search }}" style="padding: 8px; width: 300px; margin-bottom: 20px" />
+        <button type="submit" style="padding: 8px 15px">Search</button>
+      </form>
+      <div></div>
+      <div></div>
+    </div>
     <table>
       <thead>
         <tr>

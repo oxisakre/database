@@ -39,8 +39,13 @@
   .info-section h2 {
     margin-top: 0;
     color: #009879;
+    position: relative;
   }
 
+  .btn-primary {
+    color: #009879;
+    font-size: 20px;
+  }
   .styled-table {
     border-collapse: collapse;
     margin: 25px 0;
@@ -184,16 +189,11 @@
         <th>Net Price</th>
       </tr>
     </thead>
-    <tbody>
-      {% for product in top_products %}
-      <tr>
-        <td>{{ product.product__description }}</td>
-        <td>x{{ product.total_quantity }}</td>
-        <td>€{{ product.total_revenue|floatformat:2 }}</td>
-      </tr>
-      {% endfor %}
+    <tbody id="product-list">
+      {% include 'partial_top_products.html' %}
     </tbody>
   </table>
+  <button id="load-more-btn" class="btn btn-primary">Show More Products</button>
   {% else %}
   <p>No products sold in this period.</p>
   {% endif %}
@@ -202,4 +202,25 @@
   <div class="footer">
     <a href="{% url 'home' %}">Back to Orders</a>
   </div>
+
+  <script>
+    let currentPage = 1;
+
+    document.getElementById("load-more-btn").addEventListener("click", function () {
+      currentPage++;
+      fetch(`?page=${currentPage}`, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.products_html.trim() !== "") {
+            document.getElementById("product-list").innerHTML += data.products_html;
+          } else {
+            document.getElementById("load-more-btn").style.display = "none"; // Oculta el botón si no hay más productos
+          }
+        });
+    });
+  </script>
 </div>

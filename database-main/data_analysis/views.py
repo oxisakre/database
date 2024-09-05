@@ -8,23 +8,34 @@ from django.db.models import Sum, Count
 from django.db.models import Q, F
 from .forms import DateSelectorForm, DateRangeForm
 from django.db.models.functions import Round
-
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 def home(request):
-    # Retrieve all orders and order them by date, descending
-    orders = Order.objects.all().order_by('-order_date')
+    # Obtener el término de búsqueda del campo de búsqueda
+    search_query = request.GET.get('search', '')
+
+    # Filtrar órdenes por producto si se proporciona un término de búsqueda
+    if search_query:
+        # Filtrar órdenes que contienen el producto buscado en la descripción
+        orders = Order.objects.filter(
+            orderproduct__product__description__icontains=search_query
+        ).distinct().order_by('-order_date')
+    else:
+        # Si no hay término de búsqueda, devolver todas las órdenes
+        orders = Order.objects.all().order_by('-order_date')
     
-    # Convert order_date to the local timezone for each order
+    # Convertir order_date a la zona horaria local para cada orden
     for order in orders:
         order.order_date = timezone.localtime(order.order_date)
     
-    # Set up pagination, showing 20 orders per page
+    # Paginación de las órdenes, mostrando 20 órdenes por página
     paginator = Paginator(orders, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Render the template with the paginated orders
-    return render(request, 'home.html', {'orders': page_obj})
+    # Renderizar la plantilla con las órdenes paginadas y el término de búsqueda
+    return render(request, 'home.html', {'orders': page_obj, 'search_query': search_query})
 
 
 def order_detail(request, order_id):
@@ -42,7 +53,6 @@ def order_detail(request, order_id):
     }
     return render(request, 'order_detail.html', context)
 
-
 def stats_view(request):
     form = DateRangeForm(request.POST or None)
     top_products = []
@@ -54,6 +64,7 @@ def stats_view(request):
     today = datetime.now()
     one_week_ago = today - timedelta(days=7)
     one_month_ago = today - timedelta(days=30)
+    products_per_page = 10  # Número inicial de productos por página
 
     if form.is_valid():
         # Rango de fechas seleccionado por el usuario
@@ -86,7 +97,7 @@ def stats_view(request):
     )
 
     # Paginación de productos
-    paginator = Paginator(top_products, 20)
+    paginator = Paginator(top_products, products_per_page)
     page = request.GET.get('page', 1)
     try:
         paginated_products = paginator.page(page)
@@ -115,10 +126,15 @@ def stats_view(request):
         .order_by('-method_count')
     )
 
+    # Comprobamos si es una solicitud AJAX para cargar más productos
+    if request.is_ajax():
+        products_html = render_to_string('partial_top_products.html', {'top_products': paginated_products})
+        return JsonResponse({'products_html': products_html})
+
     context = {
         'form': form,
         'top_products': paginated_products,
-        'daily_revenue': selected_revenue,  # Aquí mostramos el ingreso del rango de fechas seleccionado
+        'daily_revenue': selected_revenue,
         'weekly_revenue': weekly_revenue,
         'monthly_revenue': monthly_revenue,
         'platform_usage': platform_usage,
@@ -128,6 +144,7 @@ def stats_view(request):
     }
 
     return render(request, 'stats.html', context)
+
 
 
 

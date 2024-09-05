@@ -1,0 +1,7 @@
+{% for product in top_products %}
+<tr>
+  <td>{{ product.product__description }}</td>
+  <td>x{{ product.total_quantity }}</td>
+  <td>€{{ product.total_revenue|floatformat:2 }}</td>
+</tr>
+{% endfor %}
